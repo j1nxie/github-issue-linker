@@ -43,11 +43,6 @@ void on_message(struct discord *client, const struct discord_message *event) {
             break;
         }
     }
-
-    if (strcmp(msg_content, "ping") == 0) {
-        struct discord_create_message params = {.content = "pong"};
-        discord_create_message(client, event->channel_id, &params, NULL);
-    }
 }
 
 int main() {
