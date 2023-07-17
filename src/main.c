@@ -31,7 +31,11 @@ void on_message(struct discord *client, const struct discord_message *event) {
         (void)pcre_get_substring(msg_content, ovector, rc, 2, &repo);
         (void)pcre_get_substring(msg_content, ovector, rc, 3, &issue_num);
 
-        struct discord_create_message params = {.content = (char *)username};
+        char buf[256];
+        snprintf(buf, sizeof(buf), "https://github.com/%s/%s/issues/%s",
+                 username, repo, issue_num);
+
+        struct discord_create_message params = {.content = buf};
         discord_create_message(client, event->channel_id, &params, NULL);
     }
 
