@@ -14,10 +14,6 @@ void on_ready(struct discord *client, const struct discord_ready *event) {
 }
 
 void on_message(struct discord *client, const struct discord_message *event) {
-    if (event->author->bot) {
-        return;
-    }
-
     const char *msg_content = event->content;
     int ovector[30];
 
