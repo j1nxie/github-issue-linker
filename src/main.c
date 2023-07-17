@@ -14,29 +14,34 @@ void on_ready(struct discord *client, const struct discord_ready *event) {
 }
 
 void on_message(struct discord *client, const struct discord_message *event) {
-    if (event->author->bot) {
-        return;
-    }
-
     const char *msg_content = event->content;
     int ovector[30];
-    int rc = pcre_exec(REGEX, NULL, msg_content, strlen(msg_content), 0, 0,
-                       ovector, 30);
 
-    if ((rc != PCRE_ERROR_NOMATCH) && (rc > -1)) {
-        const char *username;
-        const char *repo;
-        const char *issue_num;
-        (void)pcre_get_substring(msg_content, ovector, rc, 1, &username);
-        (void)pcre_get_substring(msg_content, ovector, rc, 2, &repo);
-        (void)pcre_get_substring(msg_content, ovector, rc, 3, &issue_num);
+    int offset = 0;
+    while (offset <= strlen(msg_content)) {
+        int rc = pcre_exec(REGEX, NULL, msg_content, strlen(msg_content),
+                           offset, 0, ovector, 30);
+        if ((rc > -1)) {
+            const char *username;
+            const char *repo;
+            const char *issue_num;
+            (void)pcre_get_substring(msg_content, ovector, rc, 1, &username);
+            (void)pcre_get_substring(msg_content, ovector, rc, 2, &repo);
+            (void)pcre_get_substring(msg_content, ovector, rc, 3, &issue_num);
 
-        char buf[256];
-        snprintf(buf, sizeof(buf), "https://github.com/%s/%s/issues/%s",
-                 username, repo, issue_num);
+            offset = ovector[1];
 
-        struct discord_create_message params = {.content = buf};
-        discord_create_message(client, event->channel_id, &params, NULL);
+            char buf[256];
+            snprintf(buf, sizeof(buf), "https://github.com/%s/%s/issues/%s",
+                     username, repo, issue_num);
+
+            struct discord_create_message params = {.content = buf};
+            discord_create_message(client, event->channel_id, &params, NULL);
+        }
+
+        if (rc == PCRE_ERROR_NOMATCH) {
+            break;
+        }
     }
 
     if (strcmp(msg_content, "ping") == 0) {
@@ -55,7 +60,7 @@ int main() {
     REGEX = pcre_compile(
         "(?P<username>[a-z\\d](?:[a-z\\d]|-(?=[a-z\\d])){0,38})/(?P<"
         "repo>[a-zA-Z0-9-_]{0,100})#(?P<issue>\\d+)",
-        0, &error, &erroffset, NULL);
+        PCRE_MULTILINE, &error, &erroffset, NULL);
 
     if (REGEX == NULL) {
         printf("PCRE compilation failed at offset %d: %s\n", erroffset, error);
